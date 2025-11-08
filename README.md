@@ -1,7 +1,7 @@
 # 🎓 ExamSensei - AI-Powered Competitive Exam Mentor
 
-[![Production Ready](https://img.shields.io/badge/Production-Ready-brightgreen)](https://github.com/yourusername/ExamSensei)
-[![Test Coverage](https://img.shields.io/badge/Coverage-85%25-brightgreen)](https://github.com/yourusername/ExamSensei)
+[![Production Ready](https://img.shields.io/badge/Production-Ready-brightgreen)](https://github.com/msrishav-28/exam-sensei)
+[![Test Coverage](https://img.shields.io/badge/Coverage-85%25-brightgreen)](https://github.com/msrishav-28/exam-sensei)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Your intelligent companion for competitive exam preparation in India. Powered by AI, designed for success.**
@@ -14,7 +14,7 @@
 
 ### Option 1: One-Click Start (Recommended)
 ```bash
-git clone https://github.com/yourusername/ExamSensei.git
+git clone https://github.com/msrishav-28/exam-sensei.git
 cd ExamSensei
 start.bat  # Windows
 # OR
@@ -285,7 +285,7 @@ MIT License - see [LICENSE](LICENSE) file.
 ## 📞 Support
 
 - **Email**: support@examsensei.com
-- **GitHub Issues**: [Report bugs](https://github.com/yourusername/ExamSensei/issues)
+- **GitHub Issues**: [Report bugs](https://github.com/msrishav-28/exam-sensei/issues)
 - **Documentation**: [docs.examsensei.com](https://docs.examsensei.com)
 
 ---
