@@ -237,23 +237,6 @@ See [Deployment Guide](docs/DEPLOYMENT.md) for details.
 
 ---
 
-## 💰 Cost Estimate
-
-### Minimal (~$13/month)
-- DigitalOcean Droplet (2GB): $12/month
-- Domain: $12/year
-- SSL: Free (Let's Encrypt)
-
-### Recommended (~$135/month)
-- DigitalOcean Droplet (8GB): $48/month
-- Managed PostgreSQL: $15/month
-- Managed Redis: $10/month
-- CDN: $20/month
-- Monitoring: $26/month
-- Email: $15/month
-
----
-
 ## 🤝 Contributing
 
 We welcome contributions! See [Contributing Guide](docs/CONTRIBUTING.md).
@@ -290,56 +273,9 @@ MIT License - see [LICENSE](LICENSE) file.
 
 ---
 
-## 🗺️ Roadmap
-
-### ✅ Q1 2025 (COMPLETED)
-- [x] Core platform with AI mentoring
-- [x] Authentication & security
-- [x] Testing infrastructure (85%+ coverage)
-- [x] Production deployment
-- [x] PWA support
-
-### Q2 2025
-- [ ] Mobile app (React Native)
-- [ ] Video lecture integration
-- [ ] Mock test platform
-- [ ] Advanced analytics dashboard
-
-### Q3 2025
-- [ ] Peer-to-peer study groups
-- [ ] Live doubt solving
-- [ ] College predictor tool
-- [ ] Scholarship finder
-
----
-
-## 🏆 Project Stats
-
-- **Lines of Code**: 15,000+
-- **Test Coverage**: 85%+
-- **API Endpoints**: 25+
-- **Supported Exams**: 20+
-- **Production Ready**: ✅ 100%
-
----
-
 ## ⭐ Star History
 
 If you find this project helpful, please give it a star! ⭐
-
----
-
-## 🎯 Status
-
-| Aspect | Rating |
-|--------|--------|
-| **Security** | ⭐⭐⭐⭐⭐ |
-| **Performance** | ⭐⭐⭐⭐⭐ |
-| **Code Quality** | ⭐⭐⭐⭐⭐ |
-| **Documentation** | ⭐⭐⭐⭐⭐ |
-| **User Experience** | ⭐⭐⭐⭐⭐ |
-
-**Overall: 5-Star Production-Ready Application** 🚀
 
 ---
 
