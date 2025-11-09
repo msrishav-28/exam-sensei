@@ -12,14 +12,20 @@
 
 ## ⚡ Quick Start
 
-### Option 1: One-Click Start (Recommended)
+### Option 1: One-Command Setup (Recommended) 🆕
 ```bash
 git clone https://github.com/msrishav-28/exam-sensei.git
 cd ExamSensei
-start.bat  # Windows
-# OR
-./start.sh  # Linux/Mac
+setup.bat  # All-in-one setup & launcher
 ```
+
+**New!** The `setup.bat` script handles everything:
+- ✅ First-time setup & dependency installation
+- ✅ Application startup (multiple modes)
+- ✅ Health checks & testing
+- ✅ Updates & cleanup
+
+See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions.
 
 ### Option 2: Docker (Full Stack)
 ```bash

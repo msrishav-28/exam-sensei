@@ -1,10 +1,19 @@
 import scrapy
-from scrapy.crawler import CrawlerProcess
+from scrapy.crawler import CrawlerProcess, CrawlerRunner
+from twisted.internet import reactor
 import json
+import logging
 from datetime import datetime
 from sqlalchemy.orm import sessionmaker
 from models import Exam, Topic
 from database import engine
+import time
+import requests
+from typing import Dict, List, Optional
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Create session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -39,10 +48,17 @@ class MultiSourceScraper:
     }
 
     def scrape_all_sources(self):
-        """Scrape all configured sources"""
+        """Scrape all configured sources with error handling"""
+        results = {}
         for source_name, config in self.SOURCES.items():
-            print(f"Starting scrape for {source_name}")
+            logger.info(f"Starting scrape for {source_name}")
             try:
+                # Test if source is accessible before scraping
+                if not self._test_source_connection(config.get('base_url')):
+                    logger.warning(f"Source {source_name} is not accessible, skipping...")
+                    results[source_name] = {"status": "skipped", "reason": "unreachable"}
+                    continue
+
                 if source_name == "nta":
                     self.scrape_nta(config)
                 elif source_name == "upsc":
@@ -51,49 +67,111 @@ class MultiSourceScraper:
                     self.scrape_ssc(config)
                 elif source_name == "ibps":
                     self.scrape_ibps(config)
-                print(f"Completed scrape for {source_name}")
+                
+                logger.info(f"Completed scrape for {source_name}")
+                results[source_name] = {"status": "success"}
             except Exception as e:
-                print(f"Error scraping {source_name}: {e}")
+                logger.error(f"Error scraping {source_name}: {str(e)}")
+                results[source_name] = {"status": "error", "error": str(e)}
+        
+        return results
+    
+    def _test_source_connection(self, url: str, timeout: int = 5) -> bool:
+        """Test if a source URL is accessible"""
+        try:
+            response = requests.head(url, timeout=timeout, allow_redirects=True)
+            return response.status_code < 400
+        except requests.RequestException:
+            return False
 
     def scrape_nta(self, config):
-        """Scrape NTA website"""
-        process = CrawlerProcess({
-            'USER_AGENT': 'ExamSensei-Bot/1.0 (+https://examsensei.com/bot)',
-            'FEEDS': [{'format': 'json', 'name': 'nta_data.json'}],
-        })
+        """Scrape NTA website with error handling"""
+        try:
+            process = CrawlerProcess({
+                'USER_AGENT': 'ExamSensei-Bot/1.0 (+https://examsensei.com/bot)',
+                'ROBOTSTXT_OBEY': True,
+                'CONCURRENT_REQUESTS': 1,
+                'DOWNLOAD_DELAY': 3,  # Be respectful to the server
+                'RETRY_TIMES': 3,
+                'RETRY_HTTP_CODES': [500, 502, 503, 504, 408, 429],
+                'LOG_LEVEL': 'INFO',
+                'FEEDS': {'nta_data.json': {'format': 'json', 'overwrite': True}},
+            })
 
-        process.crawl(NTASpider, config=config)
-        process.start()
+            process.crawl(NTASpider, config=config)
+            process.start()
+            
+            # Load and update database with scraped data
+            self._load_and_update_from_file('nta_data.json', 'nta')
+        except Exception as e:
+            logger.error(f"NTA scraping failed: {str(e)}")
+            raise
 
     def scrape_upsc(self, config):
-        """Scrape UPSC website"""
-        process = CrawlerProcess({
-            'USER_AGENT': 'ExamSensei-Bot/1.0 (+https://examsensei.com/bot)',
-            'FEEDS': [{'format': 'json', 'name': 'upsc_data.json'}],
-        })
+        """Scrape UPSC website with error handling"""
+        try:
+            process = CrawlerProcess({
+                'USER_AGENT': 'ExamSensei-Bot/1.0 (+https://examsensei.com/bot)',
+                'ROBOTSTXT_OBEY': True,
+                'CONCURRENT_REQUESTS': 1,
+                'DOWNLOAD_DELAY': 3,
+                'RETRY_TIMES': 3,
+                'RETRY_HTTP_CODES': [500, 502, 503, 504, 408, 429],
+                'LOG_LEVEL': 'INFO',
+                'FEEDS': {'upsc_data.json': {'format': 'json', 'overwrite': True}},
+            })
 
-        process.crawl(UPSCSpider, config=config)
-        process.start()
+            process.crawl(UPSCSpider, config=config)
+            process.start()
+            
+            self._load_and_update_from_file('upsc_data.json', 'upsc')
+        except Exception as e:
+            logger.error(f"UPSC scraping failed: {str(e)}")
+            raise
 
     def scrape_ssc(self, config):
-        """Scrape SSC website"""
-        process = CrawlerProcess({
-            'USER_AGENT': 'ExamSensei-Bot/1.0 (+https://examsensei.com/bot)',
-            'FEEDS': [{'format': 'json', 'name': 'ssc_data.json'}],
-        })
+        """Scrape SSC website with error handling"""
+        try:
+            process = CrawlerProcess({
+                'USER_AGENT': 'ExamSensei-Bot/1.0 (+https://examsensei.com/bot)',
+                'ROBOTSTXT_OBEY': True,
+                'CONCURRENT_REQUESTS': 1,
+                'DOWNLOAD_DELAY': 3,
+                'RETRY_TIMES': 3,
+                'RETRY_HTTP_CODES': [500, 502, 503, 504, 408, 429],
+                'LOG_LEVEL': 'INFO',
+                'FEEDS': {'ssc_data.json': {'format': 'json', 'overwrite': True}},
+            })
 
-        process.crawl(SSCSpider, config=config)
-        process.start()
+            process.crawl(SSCSpider, config=config)
+            process.start()
+            
+            self._load_and_update_from_file('ssc_data.json', 'ssc')
+        except Exception as e:
+            logger.error(f"SSC scraping failed: {str(e)}")
+            raise
 
     def scrape_ibps(self, config):
-        """Scrape IBPS website"""
-        process = CrawlerProcess({
-            'USER_AGENT': 'ExamSensei-Bot/1.0 (+https://examsensei.com/bot)',
-            'FEEDS': [{'format': 'json', 'name': 'ibps_data.json'}],
-        })
+        """Scrape IBPS website with error handling"""
+        try:
+            process = CrawlerProcess({
+                'USER_AGENT': 'ExamSensei-Bot/1.0 (+https://examsensei.com/bot)',
+                'ROBOTSTXT_OBEY': True,
+                'CONCURRENT_REQUESTS': 1,
+                'DOWNLOAD_DELAY': 3,
+                'RETRY_TIMES': 3,
+                'RETRY_HTTP_CODES': [500, 502, 503, 504, 408, 429],
+                'LOG_LEVEL': 'INFO',
+                'FEEDS': {'ibps_data.json': {'format': 'json', 'overwrite': True}},
+            })
 
-        process.crawl(IBPSSpider, config=config)
-        process.start()
+            process.crawl(IBPSSpider, config=config)
+            process.start()
+            
+            self._load_and_update_from_file('ibps_data.json', 'ibps')
+        except Exception as e:
+            logger.error(f"IBPS scraping failed: {str(e)}")
+            raise
 
     def update_database(self, scraped_data, source_name):
         """Update database with scraped data"""
@@ -129,7 +207,7 @@ class MultiSourceScraper:
             if "topics" in exam_data:
                 self.update_topics(exam.id, exam_data["topics"])
 
-        print(f"Database updated with {len(scraped_data)} exams from {source_name}")
+        logger.info(f"Database updated with {len(scraped_data)} exams from {source_name}")
 
     def update_topics(self, exam_id, topics_data):
         """Update exam topics"""
@@ -162,6 +240,21 @@ class MultiSourceScraper:
                 db.add(topic)
 
         db.commit()
+    
+    def _load_and_update_from_file(self, filename: str, source_name: str):
+        """Load scraped data from JSON file and update database"""
+        try:
+            import os
+            if os.path.exists(filename):
+                with open(filename, 'r') as f:
+                    scraped_data = json.load(f)
+                if scraped_data:
+                    self.update_database(scraped_data, source_name)
+                    logger.info(f"Successfully updated database from {filename}")
+                else:
+                    logger.warning(f"No data found in {filename}")
+        except Exception as e:
+            logger.error(f"Failed to load data from {filename}: {str(e)}")
 
 
 class NTASpider(scrapy.Spider):
