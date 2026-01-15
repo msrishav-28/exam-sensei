@@ -79,3 +79,8 @@ build/
 logs/
 *.log
 !frontend/src/lib/
+
+# Build logs and lint outputs
+**/build_log*.txt
+**/lint_log*.txt
+
