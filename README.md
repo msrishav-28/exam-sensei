@@ -132,28 +132,25 @@ ExamSensei is an **AI-powered intelligent mentor** that transforms how students 
 └──────────────┘ └─────────┘ └─────────┘
 ```
 
-### Tech Stack
+## 🛠️ Tech Stack
 
-**Backend:**
-- FastAPI (Python 3.11) - Modern async web framework
-- SQLAlchemy + PostgreSQL - Robust ORM and database
-- Redis - Caching and rate limiting
-- Ollama - Privacy-focused local LLM
-- Scrapy - Industrial-strength web scraping
-- Alembic - Database migrations
-- Pytest - Comprehensive testing (85%+ coverage)
+### Backend
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?logo=sqlalchemy&logoColor=white)
 
-**Frontend:**
-- Next.js 14 - React framework with App Router
-- TypeScript - Type-safe development
-- Tailwind CSS - Utility-first styling
-- PWA - Progressive Web App capabilities
+### Frontend
+![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=next.js&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-06B6D4?logo=tailwindcss&logoColor=white)
 
-**DevOps:**
-- Docker & Docker Compose - Containerization
-- GitHub Actions - CI/CD pipeline
-- Nginx - Reverse proxy and load balancing
-- Sentry - Error tracking and monitoring
+### Infrastructure
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-Frontend-000000?logo=vercel&logoColor=white)
+![Render](https://img.shields.io/badge/Render-Backend-46E3B7?logo=render&logoColor=white)
 
 ---
 
