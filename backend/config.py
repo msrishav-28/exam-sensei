@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     
     # CORS - comma-separated string (parsed in app)
-    allowed_origins: str = "http://localhost:3000,http://localhost:3001,https://examsensei.vercel.app"
+    allowed_origins: str = "http://localhost:3000,http://localhost:3001,https://exam-sensei.vercel.app"
     
     def get_allowed_origins_list(self) -> list:
         """Parse comma-separated origins into list"""
