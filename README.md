@@ -227,30 +227,31 @@ pytest --cov --cov-report=html
 docker-compose up -d
 ```
 
-### Cloud Platforms
-- **AWS**: ECS + RDS + ElastiCache
-- **GCP**: Cloud Run + Cloud SQL
-- **Azure**: App Service + PostgreSQL
-- **DigitalOcean**: Droplets + Managed DBs
+### Production Deployment
+| Component | Platform | Status |
+|-----------|----------|--------|
+| **Frontend** | Vercel | Auto-deploy from GitHub |
+| **Backend** | Render | Docker-based deployment |
+| **Database** | Render PostgreSQL | Managed service |
+| **Cache** | Render Redis | Managed service |
 
-See [Deployment Guide](docs/DEPLOYMENT.md) for details.
+See [Deployment Guide](docs/DEPLOYMENT.md) for step-by-step instructions.
 
 ---
 
 ## 💰 Cost Estimate
 
-### Minimal (~$13/month)
-- DigitalOcean Droplet (2GB): $12/month
-- Domain: $12/year
-- SSL: Free (Let's Encrypt)
+### Free Tier (~$0/month)
+- Vercel Frontend: Free
+- Render Backend: Free (with cold starts)
+- Render PostgreSQL: Free (90 days)
+- Render Redis: Free
 
-### Recommended (~$135/month)
-- DigitalOcean Droplet (8GB): $48/month
-- Managed PostgreSQL: $15/month
-- Managed Redis: $10/month
-- CDN: $20/month
-- Monitoring: $26/month
-- Email: $15/month
+### Production (~$39/month)
+- Vercel Pro: $20/month
+- Render Starter: $7/month
+- Render PostgreSQL: $7/month
+- Render Redis: $5/month
 
 ---
 

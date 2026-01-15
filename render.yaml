@@ -1,0 +1,46 @@
+# Render Blueprint for ExamSensei Backend
+# https://render.com/docs/blueprint-spec
+
+services:
+  # FastAPI Backend API
+  - type: web
+    name: examsensei-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    region: singapore  # Closest to India
+    plan: free  # Use 'starter' ($7/mo) for always-on
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: examsensei-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: examsensei-redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_ORIGINS
+        sync: false  # Set manually in Render dashboard
+      - key: LOG_LEVEL
+        value: INFO
+
+  # Redis Cache (for rate limiting)
+  - type: redis
+    name: examsensei-redis
+    region: singapore
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  # PostgreSQL Database
+  - name: examsensei-db
+    region: singapore
+    plan: free  # Use 'starter' ($7/mo) for production
+    databaseName: examsensei
+    user: examsensei
