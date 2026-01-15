@@ -3,8 +3,6 @@ Configuration management for ExamSensei
 Loads environment variables and provides typed configuration
 """
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
-from typing import List, Union
 from functools import lru_cache
 
 
@@ -28,21 +26,12 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://localhost:6379/0"
     
-    # CORS - supports comma-separated string from env var or list
-    allowed_origins: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "https://examsensei.vercel.app",
-        "https://*.vercel.app"
-    ]
+    # CORS - comma-separated string (parsed in app)
+    allowed_origins: str = "http://localhost:3000,http://localhost:3001,https://examsensei.vercel.app"
     
-    @field_validator('allowed_origins', mode='before')
-    @classmethod
-    def parse_allowed_origins(cls, v):
-        """Parse comma-separated string or return list as-is"""
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(',') if origin.strip()]
-        return v
+    def get_allowed_origins_list(self) -> list:
+        """Parse comma-separated origins into list"""
+        return [origin.strip() for origin in self.allowed_origins.split(',') if origin.strip()]
     
     # Email
     smtp_host: str = "smtp.gmail.com"
