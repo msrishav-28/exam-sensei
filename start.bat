@@ -1,71 +1,66 @@
 @echo off
+REM ExamSensei — local dev launcher (no Docker; uses Supabase in cloud)
 echo ========================================
 echo ExamSensei - Quick Start
 echo ========================================
 echo.
 
 echo Choose startup method:
-echo 1. Docker (Recommended - Full Stack)
-echo 2. Local Development (Backend + Frontend)
-echo 3. Backend Only
-echo 4. Frontend Only
+echo 1. Backend + Frontend (both)
+echo 2. Backend only
+echo 3. Frontend only
 echo.
 
-set /p choice="Enter choice (1-4): "
+set /p choice="Enter choice (1-3): "
 
-if "%choice%"=="1" goto docker
-if "%choice%"=="2" goto local
-if "%choice%"=="3" goto backend
-if "%choice%"=="4" goto frontend
+if "%choice%"=="1" goto both
+if "%choice%"=="2" goto backend
+if "%choice%"=="3" goto frontend
 
-:docker
-echo.
-echo Starting with Docker Compose...
-docker-compose up -d
-echo.
-echo Services starting...
-timeout /t 10 /nobreak >nul
-echo.
-echo Services Available:
-echo - Frontend: http://localhost:3000
-echo - Backend:  http://localhost:8000
-echo - API Docs: http://localhost:8000/api/v1/docs
-echo.
-echo To stop: docker-compose down
-goto end
+:both
+call :start_backend
+timeout /t 3 /nobreak >nul
+call :start_frontend
+goto endmsg
 
-:local
-echo.
-echo Starting Local Development...
-echo.
+:backend
+call :start_backend
+goto endmsg
 
+:frontend
+call :start_frontend
+goto endmsg
+
+:start_backend
 echo Starting Backend...
-cd backend
+pushd backend
 if not exist venv (
     python -m venv venv
 )
 call venv\Scripts\activate
 pip install -r requirements.txt --quiet
-if not exist examsensei.db (
-    alembic upgrade head
-    python seed_data.py
+if not exist .env (
+    copy .env.example .env >nul
+    echo Created backend\.env from .env.example -- edit it to point at Supabase.
 )
-start "Backend" cmd /k "cd /d %cd% && venv\Scripts\activate && uvicorn app_v2:app --reload"
-cd ..
+start "ExamSensei Backend" cmd /k "cd /d %cd% && venv\Scripts\activate && uvicorn app_v2:app --reload"
+popd
+exit /b 0
 
-timeout /t 3 /nobreak >nul
-
+:start_frontend
 echo Starting Frontend...
-cd frontend
+pushd frontend
 if not exist node_modules (
-    call npm install
+    call npm install --legacy-peer-deps
 )
 if not exist .env.local (
     echo NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1 > .env.local
 )
-start "Frontend" cmd /k "cd /d %cd% && npm run dev"
-cd ..
+start "ExamSensei Frontend" cmd /k "cd /d %cd% && npm run dev"
+popd
+exit /b 0
 
+:endmsg
 echo.
 echo Services starting...
 timeout /t 5 /nobreak >nul
@@ -74,37 +69,5 @@ echo Services Available:
 echo - Frontend: http://localhost:3000
 echo - Backend:  http://localhost:8000
 echo - API Docs: http://localhost:8000/api/v1/docs
-goto end
-
-:backend
-echo.
-echo Starting Backend Only...
-cd backend
-if not exist venv (
-    python -m venv venv
-)
-call venv\Scripts\activate
-pip install -r requirements.txt --quiet
-if not exist examsensei.db (
-    alembic upgrade head
-    python seed_data.py
-)
-uvicorn app_v2:app --reload
-goto end
-
-:frontend
-echo.
-echo Starting Frontend Only...
-cd frontend
-if not exist node_modules (
-    call npm install
-)
-if not exist .env.local (
-    echo NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1/docs > .env.local
-)
-npm run dev
-goto end
-
-:end
 echo.
 pause

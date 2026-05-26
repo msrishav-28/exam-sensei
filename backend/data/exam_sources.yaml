@@ -1,0 +1,165 @@
+# ExamSensei — exam source registry.
+#
+# Each entry is a single exam that the refresh pipeline tries to keep current.
+# `pages` is a map of section → URL. The pipeline fetches each page, cleans
+# it (Crawl4AI for HTML, Jina Reader for PDFs auto-detected by extension),
+# then asks Gemini to extract structured Exam + Topic data matching the
+# Pydantic schema in refresh_exam_data.py.
+#
+# Idempotent: rows are upserted by `code`. Re-running the pipeline overwrites
+# only the fields the LLM produced — manual edits to other fields survive.
+
+# ============ NTA (Engineering / Medical / Common) ============
+- code: jee_main_2025
+  body: NTA
+  name: "JEE Main 2025"
+  exam_type: engineering_entrance
+  pages:
+    notification: https://jeemain.nta.nic.in/
+    information_bulletin: https://nta.ac.in/Examinations
+
+- code: jee_advanced_2025
+  body: IIT
+  name: "JEE Advanced 2025"
+  exam_type: engineering_entrance
+  pages:
+    notification: https://jeeadv.ac.in/
+
+- code: neet_ug_2025
+  body: NTA
+  name: "NEET UG 2025"
+  exam_type: medical_entrance
+  pages:
+    notification: https://neet.nta.nic.in/
+
+- code: cuet_ug_2025
+  body: NTA
+  name: "CUET UG 2025"
+  exam_type: university_common
+  pages:
+    notification: https://cuet.nta.nic.in/
+
+- code: ugc_net_2025
+  body: NTA
+  name: "UGC NET 2025"
+  exam_type: research_eligibility
+  pages:
+    notification: https://ugcnet.nta.ac.in/
+
+# ============ UPSC (Civil Services / Defence) ============
+- code: upsc_cse_2025
+  body: UPSC
+  name: "UPSC Civil Services 2025"
+  exam_type: civil_services
+  pages:
+    notification: https://upsc.gov.in/examinations/active-examinations
+    exam_calendar: https://upsc.gov.in/examinations/exam-calendar
+
+- code: upsc_cds_2025
+  body: UPSC
+  name: "UPSC CDS 2025"
+  exam_type: defence
+  pages:
+    notification: https://upsc.gov.in/examinations/active-examinations
+
+- code: upsc_nda_2025
+  body: UPSC
+  name: "UPSC NDA 2025"
+  exam_type: defence
+  pages:
+    notification: https://upsc.gov.in/examinations/active-examinations
+
+# ============ SSC (Government recruitment) ============
+- code: ssc_cgl_2025
+  body: SSC
+  name: "SSC CGL 2025"
+  exam_type: government_recruitment
+  pages:
+    notification: https://ssc.gov.in/portal/Notice
+
+- code: ssc_chsl_2025
+  body: SSC
+  name: "SSC CHSL 2025"
+  exam_type: government_recruitment
+  pages:
+    notification: https://ssc.gov.in/portal/Notice
+
+# ============ Banking (IBPS) ============
+- code: ibps_po_2025
+  body: IBPS
+  name: "IBPS PO 2025"
+  exam_type: banking
+  pages:
+    notification: https://www.ibps.in/
+
+- code: ibps_clerk_2025
+  body: IBPS
+  name: "IBPS Clerk 2025"
+  exam_type: banking
+  pages:
+    notification: https://www.ibps.in/
+
+# ============ State PSCs (top 3 by candidate volume) ============
+- code: uppsc_2025
+  body: UPPSC
+  name: "UPPSC PCS 2025"
+  exam_type: state_civil_services
+  pages:
+    notification: https://uppsc.up.nic.in/
+
+- code: tnpsc_2025
+  body: TNPSC
+  name: "TNPSC Group I 2025"
+  exam_type: state_civil_services
+  pages:
+    notification: https://www.tnpsc.gov.in/
+
+- code: mppsc_2025
+  body: MPPSC
+  name: "MPPSC State Service 2025"
+  exam_type: state_civil_services
+  pages:
+    notification: https://mppsc.mp.gov.in/
+
+# ============ Other ============
+- code: gate_2025
+  body: IISc
+  name: "GATE 2025"
+  exam_type: postgraduate_engineering
+  pages:
+    notification: https://gate2025.iitr.ac.in/
+
+- code: cat_2025
+  body: IIM
+  name: "CAT 2025"
+  exam_type: management
+  pages:
+    notification: https://iimcat.ac.in/
+
+- code: bitsat_2025
+  body: BITS
+  name: "BITSAT 2025"
+  exam_type: engineering_entrance
+  pages:
+    notification: https://www.bitsadmission.com/
+
+- code: afcat_2025
+  body: IAF
+  name: "AFCAT 2025"
+  exam_type: defence
+  pages:
+    notification: https://afcat.cdac.in/
+
+- code: rrb_ntpc_2025
+  body: RRB
+  name: "RRB NTPC 2025"
+  exam_type: railway_recruitment
+  pages:
+    notification: https://www.rrbcdg.gov.in/
+
+- code: ctet_2025
+  body: CBSE
+  name: "CTET 2025"
+  exam_type: teaching_eligibility
+  pages:
+    notification: https://ctet.nic.in/

@@ -1,190 +1,256 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, ForeignKey, JSON, Float, ARRAY
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+"""
+SQLAlchemy models for ExamSensei.
+
+User identity is owned by Supabase Auth — `User.id` is a UUID that matches
+`auth.users.id` exactly. The `users` row is populated by the trigger in
+`backend/migrations/001_supabase_profile_trigger.sql` whenever a new auth.user
+is created via the Supabase Auth SDK. No password / reset-token columns here:
+Supabase manages those.
+
+JSON columns: assign native Python (dict/list) directly; SQLAlchemy serializes
+for you. Do not call json.dumps/json.loads on these fields.
+"""
+import uuid
 from datetime import datetime
 
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.types import CHAR, TypeDecorator
+
+
 Base = declarative_base()
+
+
+class UUIDType(TypeDecorator):
+    """
+    Cross-dialect UUID column.
+
+    - On Postgres: uses the native uuid type via psycopg2 (PG_UUID(as_uuid=True)).
+    - On SQLite (tests): stores as 32-char string, converts to/from uuid.UUID
+      transparently.
+
+    This lets the same model code run under Supabase Postgres in prod and
+    SQLite in-memory in tests without two model definitions.
+    """
+
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(PG_UUID(as_uuid=True))
+        return dialect.type_descriptor(CHAR(36))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if dialect.name == "postgresql":
+            return value if isinstance(value, uuid.UUID) else uuid.UUID(str(value))
+        # SQLite (and other dialects): store as canonical string
+        return str(value) if isinstance(value, uuid.UUID) else str(uuid.UUID(str(value)))
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return value if isinstance(value, uuid.UUID) else uuid.UUID(str(value))
+
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String, nullable=False)  # Authentication
-    name = Column(String)
-    education_level = Column(String)  # e.g., class_12, undergraduate
-    state = Column(String)
-    category = Column(String)  # SC/ST/OBC/General
-    budget = Column(String)  # low/medium/high
-    current_stage = Column(String, default="class_12")  # lifecycle stage
-    career_paths = Column(JSON)  # ["engineering", "medical"]
-    active_exams = Column(JSON)  # ["jee_main", "neet"]
-    preparation_profile = Column(JSON)  # strengths, weaknesses, study_hours
-    milestone_triggers = Column(JSON)  # next important dates
-    is_active = Column(Boolean, default=True)  # Account status
-    is_verified = Column(Boolean, default=False)  # Email verification
-    reset_token = Column(String, nullable=True)  # Password reset
-    reset_token_expires = Column(DateTime, nullable=True)
+    # UUID PK = auth.users.id. The trigger inserts this row on signup.
+    id = Column(UUIDType(), primary_key=True, default=uuid.uuid4)
+    email = Column(String(254), unique=True, index=True, nullable=False)
+    name = Column(String(120))
+    education_level = Column(String(60))
+    state = Column(String(60))
+    category = Column(String(20))          # SC/ST/OBC/General
+    budget = Column(String(20))            # low/medium/high
+    current_stage = Column(String(40), default="class_12")
+    career_paths = Column(JSON)            # ["engineering", "medical"]
+    active_exams = Column(JSON)            # ["jee_main", "neet"]
+    preparation_profile = Column(JSON)
+    milestone_triggers = Column(JSON)
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_verified = Column(Boolean, default=False, nullable=False)
     last_login = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
-    # Relationships
-    bookmarks = relationship("Bookmark", back_populates="user")
-    notifications = relationship("Notification", back_populates="user")
-    activities = relationship("UserActivity", back_populates="user")
-    recommendations = relationship("Recommendation", back_populates="user")
-    study_plans = relationship("StudyPlan", back_populates="user")
-    conversations = relationship("Conversation", back_populates="user")
-    gamification = relationship("Gamification", back_populates="user")
+    bookmarks = relationship("Bookmark", back_populates="user", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    activities = relationship("UserActivity", back_populates="user", cascade="all, delete-orphan")
+    recommendations = relationship("Recommendation", back_populates="user", cascade="all, delete-orphan")
+    study_plans = relationship("StudyPlan", back_populates="user", cascade="all, delete-orphan")
+    conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
+    gamification = relationship("Gamification", back_populates="user", uselist=False, cascade="all, delete-orphan")
+
 
 class Exam(Base):
     __tablename__ = "exams"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    code = Column(String, unique=True)
-    body = Column(String)  # NTA, UPSC, etc.
-    exam_type = Column(String)  # entrance, government, etc.
-    eligibility = Column(JSON)  # JSON with eligibility criteria
-    fees = Column(JSON)  # JSON with fee structure
-    important_dates = Column(JSON)  # JSON with dates
+    name = Column(String(200), index=True, nullable=False)
+    code = Column(String(60), unique=True, nullable=False)
+    body = Column(String(40))
+    exam_type = Column(String(40), index=True)
+    eligibility = Column(JSON)
+    fees = Column(JSON)
+    important_dates = Column(JSON)
     syllabus = Column(Text)
-    pattern = Column(JSON)  # JSON with exam pattern
-    centers = Column(JSON)  # JSON with exam centers
-    notification_url = Column(String)
-    application_url = Column(String)
-    result_url = Column(String)
-    subjects = Column(JSON)  # ["physics", "chemistry", "maths"]
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    pattern = Column(JSON)
+    centers = Column(JSON)
+    notification_url = Column(String(500))
+    application_url = Column(String(500))
+    result_url = Column(String(500))
+    subjects = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
-    # Relationships
     bookmarks = relationship("Bookmark", back_populates="exam")
     notifications = relationship("Notification", back_populates="exam")
-    topics = relationship("Topic", back_populates="exam")
+    topics = relationship("Topic", back_populates="exam", cascade="all, delete-orphan")
     activities = relationship("UserActivity", back_populates="exam")
     study_plans = relationship("StudyPlan", back_populates="exam")
+    recommendations = relationship("Recommendation", back_populates="exam")
+
 
 class Topic(Base):
     __tablename__ = "topics"
 
     id = Column(Integer, primary_key=True, index=True)
-    exam_id = Column(Integer, ForeignKey("exams.id"))
-    subject = Column(String)  # physics, chemistry, maths
-    name = Column(String)  # kinematics, organic_chemistry
-    weightage_history = Column(JSON)  # [25, 24, 26, 23, 25] last 5 years
+    exam_id = Column(Integer, ForeignKey("exams.id"), index=True, nullable=False)
+    subject = Column(String(40))
+    name = Column(String(80))
+    weightage_history = Column(JSON)
     avg_questions = Column(Float)
-    difficulty_distribution = Column(JSON)  # {easy: 40, medium: 45, hard: 15}
-    marks_per_hour = Column(Float)  # ROI metric
-    correlation_topics = Column(JSON)  # ["calculus", "vectors"]
-    previous_patterns = Column(JSON)  # recurring question types
-    created_at = Column(DateTime, default=datetime.utcnow)
+    difficulty_distribution = Column(JSON)
+    marks_per_hour = Column(Float)
+    correlation_topics = Column(JSON)
+    previous_patterns = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    # Relationships
     exam = relationship("Exam", back_populates="topics")
+
 
 class Bookmark(Base):
     __tablename__ = "bookmarks"
+    __table_args__ = (
+        UniqueConstraint("user_id", "exam_id", name="uq_bookmark_user_exam"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    exam_id = Column(Integer, ForeignKey("exams.id"))
-    added_at = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(UUIDType(), ForeignKey("users.id"), index=True, nullable=False)
+    exam_id = Column(Integer, ForeignKey("exams.id"), index=True, nullable=False)
+    added_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    # Relationships
     user = relationship("User", back_populates="bookmarks")
     exam = relationship("Exam", back_populates="bookmarks")
+
 
 class Notification(Base):
     __tablename__ = "notifications"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    exam_id = Column(Integer, ForeignKey("exams.id"))
-    notification_type = Column(String)  # application_deadline, admit_card, result
+    user_id = Column(UUIDType(), ForeignKey("users.id"), index=True, nullable=False)
+    exam_id = Column(Integer, ForeignKey("exams.id"), nullable=True)
+    # notification_type encodes both the category and the specific trigger
+    # (e.g. "milestone_reminder:jee_exam_date") — see lifecycle.py.
+    notification_type = Column(String(80), index=True)
     message = Column(Text)
     scheduled_at = Column(DateTime)
-    sent = Column(Boolean, default=False)
-    channel = Column(String)  # email, push, telegram
-    created_at = Column(DateTime, default=datetime.utcnow)
+    sent = Column(Boolean, default=False, nullable=False)
+    channel = Column(String(20))
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    # Relationships
     user = relationship("User", back_populates="notifications")
     exam = relationship("Exam", back_populates="notifications")
+
 
 class UserActivity(Base):
     __tablename__ = "user_activities"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(UUIDType(), ForeignKey("users.id"), index=True, nullable=False)
     exam_id = Column(Integer, ForeignKey("exams.id"), nullable=True)
-    activity_type = Column(String)  # viewed_exam, bookmarked, took_quiz
-    details = Column(JSON)  # additional data
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    activity_type = Column(String(60))
+    details = Column(JSON)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    # Relationships
     user = relationship("User", back_populates="activities")
     exam = relationship("Exam", back_populates="activities")
+
 
 class Recommendation(Base):
     __tablename__ = "recommendations"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    exam_id = Column(Integer, ForeignKey("exams.id"))
-    recommendation_type = Column(String)  # career_path, study_topic, clash_alert
-    score = Column(Float)  # confidence score
+    user_id = Column(UUIDType(), ForeignKey("users.id"), index=True, nullable=False)
+    # Clash alerts span multiple exams and don't belong to a single exam row.
+    exam_id = Column(Integer, ForeignKey("exams.id"), nullable=True)
+    recommendation_type = Column(String(40))
+    score = Column(Float)
     reasoning = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     expires_at = Column(DateTime)
 
-    # Relationships
     user = relationship("User", back_populates="recommendations")
     exam = relationship("Exam", back_populates="recommendations")
+
 
 class StudyPlan(Base):
     __tablename__ = "study_plans"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    exam_id = Column(Integer, ForeignKey("exams.id"))
-    plan_data = Column(JSON)  # structured plan with topics, timeline
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(UUIDType(), ForeignKey("users.id"), index=True, nullable=False)
+    exam_id = Column(Integer, ForeignKey("exams.id"), index=True, nullable=False)
+    plan_data = Column(JSON)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    # Relationships
     user = relationship("User", back_populates="study_plans")
     exam = relationship("Exam", back_populates="study_plans")
+
 
 class Conversation(Base):
     __tablename__ = "conversations"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    session_id = Column(String)  # conversation session
+    user_id = Column(UUIDType(), ForeignKey("users.id"), index=True, nullable=False)
+    session_id = Column(String(80), index=True)
     message = Column(Text)
     response = Column(Text)
-    intent = Column(String)  # query type
-    context = Column(JSON)  # user state, exam context
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    intent = Column(String(40))
+    context = Column(JSON)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
-    # Relationships
     user = relationship("User", back_populates="conversations")
+
 
 class Gamification(Base):
     __tablename__ = "gamification"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    level = Column(Integer, default=1)
-    xp_points = Column(Integer, default=0)
-    streak_days = Column(Integer, default=0)
-    achievements = Column(JSON)  # unlocked achievements
-    last_activity = Column(DateTime, default=datetime.utcnow)
+    # One row per user — enforces the invariant at the DB level so the
+    # auto-create path in /users/{id}/gamification can't race-create
+    # duplicate rows.
+    user_id = Column(UUIDType(), ForeignKey("users.id"), unique=True, nullable=False)
+    level = Column(Integer, default=1, nullable=False)
+    xp_points = Column(Integer, default=0, nullable=False)
+    streak_days = Column(Integer, default=0, nullable=False)
+    achievements = Column(JSON)
+    last_activity = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    # Relationships
     user = relationship("User", back_populates="gamification")
-
-# Add missing relationships to Exam
-Exam.recommendations = relationship("Recommendation", back_populates="exam")

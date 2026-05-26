@@ -39,26 +39,22 @@ def test_career_recommender_medical():
 def test_topic_prioritizer_calculation(db_session, test_user, test_exam):
     """Test topic prioritization algorithm"""
     from models import Topic
-    import json
-    
-    # Create test topics
+
     topic = Topic(
         exam_id=test_exam.id,
         subject="physics",
         name="mechanics",
-        weightage_history=json.dumps([25, 24, 26, 23, 25]),
+        weightage_history=[25, 24, 26, 23, 25],
         avg_questions=8,
-        difficulty_distribution=json.dumps({"easy": 40, "medium": 45, "hard": 15}),
-        marks_per_hour=1.8
+        difficulty_distribution={"easy": 40, "medium": 45, "hard": 15},
+        marks_per_hour=1.8,
     )
     db_session.add(topic)
     db_session.commit()
-    
+
     prioritizer = TopicPrioritizer(db_session)
-    
-    # Test priority score calculation
     score = prioritizer._calculate_priority_score(topic, [], ["mechanics"], 90)
-    
+
     assert score > 0
     assert isinstance(score, float)
 
@@ -66,30 +62,28 @@ def test_topic_prioritizer_calculation(db_session, test_user, test_exam):
 def test_exam_clash_detector(db_session):
     """Test exam clash detection"""
     from models import Exam
-    import json
-    
-    # Create overlapping exams
+
     exam1 = Exam(
         name="Exam 1",
         code="exam1",
         body="NTA",
         exam_type="entrance",
-        important_dates=json.dumps({"exam_dates": ["2025-01-15", "2025-01-16"]})
+        important_dates={"exam_dates": ["2025-01-15", "2025-01-16"]},
     )
     exam2 = Exam(
         name="Exam 2",
         code="exam2",
         body="UPSC",
         exam_type="entrance",
-        important_dates=json.dumps({"exam_dates": ["2025-01-15", "2025-01-17"]})
+        important_dates={"exam_dates": ["2025-01-15", "2025-01-17"]},
     )
-    
+
     db_session.add_all([exam1, exam2])
     db_session.commit()
-    
+
     detector = ExamClashDetector()
     clashes = detector.detect_clashes(["exam1", "exam2"], db_session)
-    
+
     assert clashes["has_clashes"] is True
     assert len(clashes["clashes"]) > 0
     assert "2025-01-15" in clashes["clashes"][0]["conflicting_dates"]

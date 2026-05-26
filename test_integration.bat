@@ -22,7 +22,6 @@ pip install -r requirements.txt --quiet
 echo - Checking database...
 if not exist examsensei.db (
     echo   Initializing database...
-    alembic upgrade head
     python seed_data.py
 ) else (
     echo   Database exists

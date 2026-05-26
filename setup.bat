@@ -27,12 +27,11 @@ echo  3. %YELLOW%Health Check%RESET% - Verify all services
 echo  4. %YELLOW%Update Dependencies%RESET% - Update packages
 echo  5. %YELLOW%Run Tests%RESET% - Execute test suite
 echo  6. %YELLOW%Cleanup%RESET% - Stop all services
-echo  7. %YELLOW%Docker Setup%RESET% - Run with Docker
-echo  8. %YELLOW%Exit%RESET%
+echo  7. %YELLOW%Exit%RESET%
 echo.
 echo ============================================================
 
-set /p choice="Enter your choice (1-8): "
+set /p choice="Enter your choice (1-7): "
 
 if "%choice%"=="1" goto FIRST_TIME_SETUP
 if "%choice%"=="2" goto START_APP
@@ -40,8 +39,7 @@ if "%choice%"=="3" goto HEALTH_CHECK
 if "%choice%"=="4" goto UPDATE_DEPS
 if "%choice%"=="5" goto RUN_TESTS
 if "%choice%"=="6" goto CLEANUP
-if "%choice%"=="7" goto DOCKER_SETUP
-if "%choice%"=="8" goto END
+if "%choice%"=="7" goto END
 
 echo %RED%Invalid choice. Please try again.%RESET%
 timeout /t 2 /nobreak >nul
@@ -106,10 +104,9 @@ if %errorlevel% neq 0 (
 )
 echo   %GREEN%✓ Python dependencies installed%RESET%
 
-REM Initialize database
+REM Initialize database (SQLite for local dev; Supabase handles production)
 echo   Initializing database...
 if not exist examsensei.db (
-    alembic upgrade head
     python seed_data.py
     echo   %GREEN%✓ Database initialized with seed data%RESET%
 ) else (
@@ -218,17 +215,15 @@ echo.
 echo  1. Full Stack (Backend + Frontend) - Recommended
 echo  2. Backend Only
 echo  3. Frontend Only
-echo  4. Docker Compose
-echo  5. Back to Main Menu
+echo  4. Back to Main Menu
 echo.
 
-set /p start_choice="Enter choice (1-5): "
+set /p start_choice="Enter choice (1-4): "
 
 if "%start_choice%"=="1" goto START_FULL
 if "%start_choice%"=="2" goto START_BACKEND
 if "%start_choice%"=="3" goto START_FRONTEND
-if "%start_choice%"=="4" goto START_DOCKER
-if "%start_choice%"=="5" goto MAIN_MENU
+if "%start_choice%"=="4" goto MAIN_MENU
 
 echo %RED%Invalid choice.%RESET%
 timeout /t 2 /nobreak >nul
@@ -305,27 +300,6 @@ echo %YELLOW%Starting Frontend Only...%RESET%
 cd frontend
 npm run dev
 cd ..
-goto MAIN_MENU
-
-:START_DOCKER
-echo.
-echo %YELLOW%Starting with Docker Compose...%RESET%
-docker-compose up -d
-if %errorlevel% neq 0 (
-    echo %RED%ERROR: Docker Compose failed!%RESET%
-    echo Make sure Docker is installed and running.
-    pause
-    goto MAIN_MENU
-)
-echo.
-echo %GREEN%✓ Services started with Docker%RESET%
-echo.
-echo Services available at:
-echo  • Frontend: http://localhost:3000
-echo  • Backend:  http://localhost:8000
-echo.
-echo To stop: docker-compose down
-pause
 goto MAIN_MENU
 
 REM ============================================================
@@ -527,64 +501,10 @@ for /f "tokens=5" %%a in ('netstat -aon ^| find ":3000" ^| find "LISTENING"') do
 )
 echo %GREEN%✓ Frontend stopped%RESET%
 
-echo   Stopping Docker containers...
-docker-compose down >nul 2>&1
-echo %GREEN%✓ Docker containers stopped%RESET%
-
 echo.
 echo %GREEN%============================================================%RESET%
 echo %GREEN%           Cleanup Complete! ✓%RESET%
 echo %GREEN%============================================================%RESET%
-echo.
-pause
-goto MAIN_MENU
-
-REM ============================================================
-REM DOCKER SETUP
-REM ============================================================
-:DOCKER_SETUP
-cls
-echo %BLUE%============================================================%RESET%
-echo %BLUE%           Docker Setup%RESET%
-echo %BLUE%============================================================%RESET%
-echo.
-
-REM Check if Docker is installed
-docker --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo %RED%ERROR: Docker is not installed!%RESET%
-    echo Please install Docker Desktop from https://www.docker.com/
-    pause
-    goto MAIN_MENU
-)
-
-echo %YELLOW%Building and starting Docker containers...%RESET%
-echo.
-docker-compose up -d --build
-
-if %errorlevel% neq 0 (
-    echo %RED%ERROR: Docker Compose failed!%RESET%
-    pause
-    goto MAIN_MENU
-)
-
-echo.
-echo %YELLOW%Initializing database in container...%RESET%
-docker-compose exec backend alembic upgrade head
-docker-compose exec backend python seed_data.py
-
-echo.
-echo %GREEN%============================================================%RESET%
-echo %GREEN%           Docker Setup Complete! ✓%RESET%
-echo %GREEN%============================================================%RESET%
-echo.
-echo Services available at:
-echo  • Frontend: http://localhost:3000
-echo  • Backend:  http://localhost:8000
-echo  • API Docs: http://localhost:8000/api/v1/docs
-echo.
-echo %YELLOW%To stop:%RESET% docker-compose down
-echo %YELLOW%To view logs:%RESET% docker-compose logs -f
 echo.
 pause
 goto MAIN_MENU

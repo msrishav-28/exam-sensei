@@ -43,9 +43,7 @@ def test_concurrent_requests(client, test_user, auth_headers):
 def test_large_dataset_handling(client, db_session):
     """Test handling of large datasets"""
     from models import Exam
-    import json
-    
-    # Create multiple exams
+
     exams = []
     for i in range(50):
         exam = Exam(
@@ -53,7 +51,7 @@ def test_large_dataset_handling(client, db_session):
             code=f"test_exam_{i}",
             body="Test Body",
             exam_type="test",
-            important_dates=json.dumps({"exam_dates": ["2025-01-01"]})
+            important_dates={"exam_dates": ["2025-01-01"]},
         )
         exams.append(exam)
     

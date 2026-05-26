@@ -1,109 +1,104 @@
 """
-Custom exceptions for ExamSensei
-Provides specific error types for better error handling
+HTTP error helpers — all return HTTPException with a consistent envelope:
+
+    {"detail": {"message": "...", "details": {...}}}
+
+so callers (frontend) only ever have to parse one shape.
 """
+from typing import Optional
+
 from fastapi import HTTPException, status
 
 
 class ExamSenseiException(Exception):
-    """Base exception for ExamSensei"""
-    def __init__(self, message: str, details: dict = None):
+    """Base exception for ExamSensei domain errors."""
+
+    def __init__(self, message: str, details: Optional[dict] = None):
         self.message = message
         self.details = details or {}
         super().__init__(self.message)
 
 
 class AuthenticationError(ExamSenseiException):
-    """Authentication failed"""
     pass
 
 
 class AuthorizationError(ExamSenseiException):
-    """User not authorized for this action"""
     pass
 
 
 class ResourceNotFoundError(ExamSenseiException):
-    """Requested resource not found"""
     pass
 
 
 class ValidationError(ExamSenseiException):
-    """Data validation failed"""
     pass
 
 
 class ExternalServiceError(ExamSenseiException):
-    """External service (Ollama, scraper) failed"""
     pass
 
 
 class DatabaseError(ExamSenseiException):
-    """Database operation failed"""
     pass
 
 
 class RateLimitError(ExamSenseiException):
-    """Rate limit exceeded"""
     pass
 
 
-# HTTP Exception helpers
-def http_exception(status_code: int, message: str, details: dict = None):
-    """Create HTTP exception with details"""
+def _envelope(message: str, details: Optional[dict] = None) -> dict:
+    return {"message": message, "details": details or {}}
+
+
+def http_exception(
+    status_code: int,
+    message: str,
+    details: Optional[dict] = None,
+    headers: Optional[dict] = None,
+) -> HTTPException:
     return HTTPException(
         status_code=status_code,
-        detail={
-            "message": message,
-            "details": details or {}
-        }
+        detail=_envelope(message, details),
+        headers=headers,
     )
 
 
-def not_found(resource: str, identifier: str = None):
-    """404 Not Found"""
-    message = f"{resource} not found"
-    if identifier:
-        message += f": {identifier}"
-    return http_exception(status.HTTP_404_NOT_FOUND, message)
+def not_found(resource: str, identifier: Optional[str] = None) -> HTTPException:
+    msg = f"{resource} not found" + (f": {identifier}" if identifier else "")
+    return http_exception(status.HTTP_404_NOT_FOUND, msg)
 
 
-def unauthorized(message: str = "Authentication required"):
-    """401 Unauthorized"""
-    return HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail=message,
-        headers={"WWW-Authenticate": "Bearer"}
+def unauthorized(message: str = "Authentication required") -> HTTPException:
+    return http_exception(
+        status.HTTP_401_UNAUTHORIZED,
+        message,
+        headers={"WWW-Authenticate": "Bearer"},
     )
 
 
-def forbidden(message: str = "Access forbidden"):
-    """403 Forbidden"""
+def forbidden(message: str = "Access forbidden") -> HTTPException:
     return http_exception(status.HTTP_403_FORBIDDEN, message)
 
 
-def bad_request(message: str, details: dict = None):
-    """400 Bad Request"""
+def bad_request(message: str, details: Optional[dict] = None) -> HTTPException:
     return http_exception(status.HTTP_400_BAD_REQUEST, message, details)
 
 
-def internal_error(message: str = "Internal server error"):
-    """500 Internal Server Error"""
+def internal_error(message: str = "Internal server error") -> HTTPException:
     return http_exception(status.HTTP_500_INTERNAL_SERVER_ERROR, message)
 
 
-def service_unavailable(service: str):
-    """503 Service Unavailable"""
+def service_unavailable(service: str) -> HTTPException:
     return http_exception(
         status.HTTP_503_SERVICE_UNAVAILABLE,
-        f"{service} is currently unavailable"
+        f"{service} is currently unavailable",
     )
 
 
-def rate_limit_exceeded():
-    """429 Too Many Requests"""
-    return HTTPException(
-        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        detail="Rate limit exceeded. Please try again later.",
-        headers={"Retry-After": "60"}
+def rate_limit_exceeded() -> HTTPException:
+    return http_exception(
+        status.HTTP_429_TOO_MANY_REQUESTS,
+        "Rate limit exceeded. Please try again later.",
+        headers={"Retry-After": "60"},
     )
