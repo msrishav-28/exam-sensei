@@ -129,27 +129,27 @@ REM Setup Frontend
 echo %YELLOW%[4/7] Setting up Frontend...%RESET%
 cd frontend
 
-REM Install Node dependencies
+REM Install frontend dependencies (Bun)
 if not exist node_modules (
-    echo   Installing Node.js dependencies...
-    call npm install --legacy-peer-deps --silent
+    echo   Installing frontend dependencies with bun...
+    call bun install --silent
     if %errorlevel% neq 0 (
-        echo %RED%ERROR: Failed to install Node dependencies!%RESET%
+        echo %RED%ERROR: Failed to install frontend dependencies! Is Bun installed?%RESET%
         pause
         goto MAIN_MENU
     )
-    echo   %GREEN%✓ Node.js dependencies installed%RESET%
+    echo   %GREEN%✓ Frontend dependencies installed%RESET%
 ) else (
-    echo   %GREEN%✓ Node modules already exist%RESET%
+    echo   %GREEN%✓ Frontend node_modules already exist%RESET%
 )
 
-REM Create .env.local file if not exists
-if not exist .env.local (
-    echo   Creating .env.local file...
-    echo NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1 > .env.local
-    echo   %GREEN%✓ .env.local file created%RESET%
+REM Create .env file if not exists
+if not exist .env (
+    echo   Creating .env file from .env.example...
+    copy .env.example .env >nul
+    echo   %GREEN%✓ .env created — edit VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY%RESET%
 ) else (
-    echo   %GREEN%✓ .env.local file already exists%RESET%
+    echo   %GREEN%✓ .env file already exists%RESET%
 )
 
 cd ..
@@ -405,7 +405,7 @@ goto MAIN_MENU
 echo.
 echo %YELLOW%Updating Frontend Dependencies...%RESET%
 cd frontend
-call npm update --legacy-peer-deps
+call bun update
 echo %GREEN%✓ Frontend dependencies updated%RESET%
 cd ..
 pause
@@ -423,9 +423,9 @@ pip install -r requirements.txt --upgrade --quiet
 echo %GREEN%✓ Backend updated%RESET%
 cd ..
 echo.
-echo %YELLOW%[2/2] Frontend...%RESET%
+echo %YELLOW%[2/2] Frontend (Bun)...%RESET%
 cd frontend
-call npm update --legacy-peer-deps --silent
+call bun update --silent
 echo %GREEN%✓ Frontend updated%RESET%
 cd ..
 echo.

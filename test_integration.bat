@@ -41,20 +41,20 @@ cd frontend
 
 echo - Checking if node_modules exists...
 if not exist node_modules (
-    echo   Installing frontend dependencies...
-    call npm install
+    echo   Installing frontend dependencies with bun...
+    call bun install
 ) else (
     echo   Dependencies already installed
 )
 
 echo - Checking environment file...
-if not exist .env.local (
-    echo   Creating .env.local...
-    echo NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1 > .env.local
+if not exist .env (
+    echo   Creating .env from .env.example...
+    copy .env.example .env >nul
 )
 
 echo - Starting frontend server...
-start "ExamSensei Frontend" cmd /k "cd /d %cd% && npm run dev"
+start "ExamSensei Frontend" cmd /k "cd /d %cd% && bun run dev"
 
 echo   Frontend starting at http://localhost:3000
 timeout /t 5 /nobreak >nul

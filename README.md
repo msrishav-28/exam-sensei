@@ -2,7 +2,7 @@
 
 AI-powered mentor for Indian competitive exam preparation. The product gives students a single place to track exam information, plan their study, and chat with a context-aware AI mentor about their preparation.
 
-> **Status**: backend production-ready, frontend in development. Designed to run end-to-end on free tiers (Render + Supabase + Vercel + Google Gemini API + GitHub Actions) until ~100 active users.
+> **Status**: backend production-ready, frontend wired end-to-end. Runs entirely on free tiers (Render + Supabase + Vercel + Google Gemini API + GitHub Actions) until ~100 active users — only manual deploy clicks remain.
 
 ---
 
@@ -10,10 +10,10 @@ AI-powered mentor for Indian competitive exam preparation. The product gives stu
 
 | Layer | Choice |
 |---|---|
-| Frontend | Next.js 15 + React 19 + TailwindCSS (on Vercel) |
-| Backend API | FastAPI + SQLAlchemy 2 + python-jose (on Render's Python runtime) |
+| Frontend | TanStack Start (Vite 7 + React 19 + Tailwind v4 + shadcn/ui + Three.js landing visuals) on Vercel |
+| Backend API | FastAPI + SQLAlchemy 2 + python-jose on Render's Python runtime |
 | Database | Supabase Postgres (free tier) |
-| Auth | Supabase Auth — backend verifies JWTs, no custom password handling |
+| Auth | Supabase Auth — frontend uses `@supabase/supabase-js`, backend verifies the JWT |
 | LLM | Pluggable: Gemini Flash (default, free) → Groq → OpenAI → Anthropic, with a canned-text fallback when no key is configured |
 | Exam data refresh | Crawl4AI + Jina Reader → Gemini structured extraction → Supabase upsert, run weekly on GitHub Actions cron |
 
@@ -35,7 +35,15 @@ backend/                       FastAPI app + tests + scraper pipeline
   scripts/                     Standalone scripts (exam-data refresh)
   data/exam_sources.yaml       Curated list of 22 Indian exam bodies
   tests/                       44 pytest tests (security, integration, LLM, scraper)
-frontend/                      Next.js app (untouched in the recent backend pass)
+frontend/                      TanStack Start app (landing + product UI)
+  src/styles.css               Design tokens — Paper & Ink palette, fonts, utilities
+  src/routes/                  File-based routes (landing, /login, /signup, /app/*)
+  src/components/landing/      Landing sections (Hero, Manifesto, MentorConsole, …)
+  src/components/app/          Authenticated app shell + page primitives
+  src/components/auth/         Auth screen layout
+  src/components/ui/           shadcn/ui (new-york style, full set)
+  src/lib/                     supabase.ts (browser client), api.ts (typed fetch),
+                               auth.tsx (AuthProvider / useAuth), utils.ts
 docs/DEPLOYMENT.md             Step-by-step deploy guide
 render.yaml                    Render Blueprint (Python runtime, no Docker)
 .github/workflows/             GitHub Actions for the weekly exam-data refresh
@@ -55,10 +63,11 @@ copy .env.example .env               # fill in SUPABASE_* if you want auth to wo
 python seed_data.py                  # optional: seed JEE/NEET demo data into the local SQLite
 uvicorn app_v2:app --reload
 
-# Frontend
+# Frontend (Bun)
 cd ../frontend
-npm install --legacy-peer-deps
-npm run dev
+bun install
+cp .env.example .env                 # then fill in VITE_SUPABASE_* and VITE_API_URL
+bun run dev
 ```
 
 - Backend: http://localhost:8000
@@ -66,6 +75,8 @@ npm run dev
 - Frontend: http://localhost:3000
 
 For full backend dev docs (env vars, testing, LLM provider selection, etc.) see **[backend/README.md](backend/README.md)**.
+
+For frontend dev (route map, design tokens, components) see **[frontend/README.md](frontend/README.md)**.
 
 For deploying to Supabase + Render + Vercel see **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
 

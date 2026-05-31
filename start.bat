@@ -48,15 +48,16 @@ popd
 exit /b 0
 
 :start_frontend
-echo Starting Frontend...
+echo Starting Frontend (Bun)...
 pushd frontend
 if not exist node_modules (
-    call npm install --legacy-peer-deps
+    call bun install
 )
-if not exist .env.local (
-    echo NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1 > .env.local
+if not exist .env (
+    copy .env.example .env >nul
+    echo Created frontend\.env from .env.example -- fill in VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY.
 )
-start "ExamSensei Frontend" cmd /k "cd /d %cd% && npm run dev"
+start "ExamSensei Frontend" cmd /k "cd /d %cd% && bun run dev"
 popd
 exit /b 0
 

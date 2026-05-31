@@ -28,7 +28,7 @@ From **Project Settings → API**, copy:
 | Name | Used by |
 |---|---|
 | `Project URL` | `SUPABASE_URL` env (backend) and your frontend Supabase client |
-| `anon public` key | `NEXT_PUBLIC_SUPABASE_ANON_KEY` env (frontend) |
+| `anon public` key | `VITE_SUPABASE_ANON_KEY` env (frontend) |
 | `service_role` key | `SUPABASE_SERVICE_ROLE_KEY` env (GitHub Actions scraper only — never the frontend) |
 | `JWT Secret` | `SUPABASE_JWT_SECRET` env (backend) |
 
@@ -92,21 +92,28 @@ Healthcheck: `GET /api/v1/health` → `{"status": "healthy"}`. Render uses this 
 
 ## 3. Vercel — frontend
 
-The frontend is a Next.js app under `frontend/`. The repository ships [`vercel.json`](../vercel.json) at the repo root configured for that subdirectory.
+The frontend is a **TanStack Start** app under `frontend/` (Vite 7 + React 19 + Tailwind v4 + shadcn/ui, package-managed with **Bun**). Vercel detects TanStack Start natively from `@tanstack/react-start` in `package.json` and runs the build for you. The repo intentionally ships **no root `vercel.json`** — all configuration lives in the Vercel project settings.
 
 1. Sign in to Vercel → **Add New Project** → import this repo.
-2. Vercel auto-detects Next.js. Confirm Framework Preset: **Next.js**, Root Directory: `/` (Vercel reads `vercel.json` to find the `frontend` subdirectory).
-3. Set environment variables (Settings → Environment Variables):
+2. In the import dialog:
+   - **Root Directory**: `frontend`
+   - **Framework Preset**: TanStack Start (auto-detected). If Vercel offers "Other" instead, pick that — Vercel still runs the project's own `build` script and serves `dist/client` + the server bundle.
+   - **Install Command**: `bun install` (Vercel auto-detects from `bun.lock`).
+   - **Build Command**: leave default (`bun run build` → `vite build`).
+   - **Output Directory**: leave default.
+3. Set environment variables (Settings → Environment Variables — apply to Production + Preview + Development):
 
 | Variable | Value |
 |---|---|
-| `NEXT_PUBLIC_API_URL` | `https://examsensei-api.onrender.com/api/v1` (your Render service URL) |
-| `NEXT_PUBLIC_SUPABASE_URL` | Same Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The Supabase `anon public` key |
+| `VITE_API_URL` | `https://<your-render-service>.onrender.com/api/v1` |
+| `VITE_SUPABASE_URL` | Same Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | The Supabase `anon public` key |
 
 4. Click **Deploy**. Future pushes to `main` redeploy automatically.
 
-> After the first frontend deploy completes, copy its URL back into Render's `ALLOWED_ORIGINS` env so CORS lets the browser through.
+> **CORS:** after the first deploy, copy the Vercel domain (e.g. `https://exam-sensei.vercel.app`) into the Render backend's `ALLOWED_ORIGINS` env var. Add custom domains there too once they're live.
+
+> **Auth flow:** the frontend signs users up via `supabase.auth.signUp({ options: { data: { name, education_level, state, … }}})`. The Postgres trigger from step 1c creates the matching `public.users` row, then `/api/v1/auth/me` returns it. If you turn on **email confirmation** in Supabase Auth settings, the signup screen will show a "check your inbox" state and the user must click the link before they can sign in.
 
 ---
 
@@ -139,11 +146,16 @@ Logs appear in the GitHub Actions run output. Exit code is non-zero if more than
 curl https://<your-render-service>.onrender.com/api/v1/health
 
 # Browser flow:
-# 1. Open https://<your-vercel-app>.vercel.app
-# 2. Sign up via the Supabase auth UI.
-# 3. After the trigger fires, verify in Supabase Table Editor that a matching
-#    row appears in public.users.
-# 4. From the dashboard, hit GET /api/v1/auth/me — should return the new user.
+# 1. Open https://<your-vercel-app>.vercel.app — landing renders.
+# 2. Click "Get early access" → /signup → fill in the form (name, email,
+#    password, education_level, state). Submit.
+# 3. Supabase creates auth.users → the Postgres trigger creates public.users.
+#    Verify in Supabase Table Editor.
+# 4. You should land in /app — the dashboard hits /api/v1/auth/me and
+#    /users/{uuid}/{recommendations,gamification}.
+# 5. /app/exams lists the seeded exams. /app/chat returns a response (real
+#    LLM if GOOGLE_API_KEY is set, canned fallback otherwise — never 500).
+# 6. /app/profile saves career_paths + active_exams; recommendations update.
 ```
 
 For a one-shot exam refresh: GitHub → Actions → Refresh exam data → Run workflow → check the Supabase `exams` table for fresh rows. Re-run to confirm idempotency (no duplicates).
