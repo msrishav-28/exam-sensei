@@ -31,14 +31,14 @@ export function Cryptex() {
             </p>
             <div className="mt-10 grid grid-cols-2 gap-y-4 text-[13px]">
               <div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-paper/50">Next up</div>
-                <div className="mt-1 font-display text-paper">JEE Main · S1</div>
-                <div className="text-ember">in 42 days</div>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-paper/50">Surfaces</div>
+                <div className="mt-1 font-display text-paper">Your next exam</div>
+                <div className="text-ember">days, not pages</div>
               </div>
               <div>
                 <div className="font-mono text-[10px] uppercase tracking-widest text-paper/50">Tracked</div>
-                <div className="mt-1 font-display text-paper">47 exams</div>
-                <div className="text-paper/60">189 windows</div>
+                <div className="mt-1 font-display text-paper">India's major exams</div>
+                <div className="text-paper/60">+ all their windows</div>
               </div>
             </div>
           </div>

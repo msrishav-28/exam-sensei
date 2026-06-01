@@ -45,9 +45,9 @@ export function ProductReveal() {
               the next hour of study earns the most marks.
             </p>
             <div className="mt-10 grid grid-cols-3 gap-4">
-              <Stat n="10yr" l="of papers parsed" />
-              <Stat n="12.4k" l="topics indexed" />
-              <Stat n="3×" l="study efficiency" />
+              <Stat n="Past" l="papers indexed" />
+              <Stat n="Weighted" l="by frequency" />
+              <Stat n="Adaptive" l="updates nightly" />
             </div>
           </div>
 

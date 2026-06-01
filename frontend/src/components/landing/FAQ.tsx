@@ -4,27 +4,27 @@ import { motion, AnimatePresence } from "framer-motion";
 const faqs = [
   {
     q: "Which exams does ExamSensei support?",
-    a: "JEE Main & Advanced, NEET UG, BITSAT, CUET, GATE, UPSC Prelims, CAT, CLAT, NDA, and 38 more. The syllabus, paper history, and difficulty curves are tuned per exam.",
+    a: "India's major competitive exams — JEE Main & Advanced, NEET UG, BITSAT, CUET, GATE, UPSC, CAT, SSC, IBPS, several state PSCs. We're starting with a focused set and adding more as we go; the planner is tuned per exam from public past papers.",
   },
   {
     q: "Is this another video-lecture platform?",
-    a: "No. We don't sell lectures. ExamSensei is the mentor on top of the prep you're already doing — it decides what's next, drills your weak spots, and tracks your progress.",
+    a: "No. We don't sell lectures. ExamSensei is the mentor on top of the prep you're already doing — it decides what's next, drills your weak spots, and keeps your plan honest.",
   },
   {
-    q: "Do I have to log every problem manually?",
-    a: "Practically nothing. Solve inside the app or paste a screenshot of your scratch work; the mentor figures out what to update.",
+    q: "How do I tell the mentor what I've done?",
+    a: "Type. Tell it what you studied, what you bombed, which mock you took. It updates the plan and the priorities accordingly. We don't ask you to fill spreadsheets.",
   },
   {
-    q: "Is the AI mentor accurate?",
-    a: "Answers are cited from NCERT and the last decade of official papers. The model runs locally so your prompts never leave your device. If it doesn't know, it says so.",
+    q: "Where does the AI run? Is my data private?",
+    a: "Chat is powered by hosted LLM APIs (Gemini, Groq, OpenAI or Anthropic depending on configuration) — your messages go to the provider for that turn. We store your conversation history in your account so the next session has context; you can delete it from your profile any time.",
   },
   {
     q: "How much does it cost?",
-    a: "Free during the beta. Post-launch: one student-friendly subscription, with full access on scholarship for verified aspirants from underserved districts.",
+    a: "Free while we're small. Once we hit real scale we'll add a paid tier; until then, the goal is to ship a tool that actually helps, not to charge you for it.",
   },
   {
-    q: "I'm a parent. Why should my kid use this?",
-    a: "Because hours studied is the wrong metric. ExamSensei replaces it with marks gained — and gives you (and your kid) a weekly report that's actually honest.",
+    q: "Is this ready for me to bet my exam on?",
+    a: "We're early. The planner, mentor, and exam calendar work; some things are still rough. Use it alongside your existing routine, not as a replacement for it — and tell us what's broken.",
   },
 ];
 
