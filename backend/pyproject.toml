@@ -1,0 +1,13 @@
+# Tool configuration only — backend is not packaged as a distributable.
+# Dependencies live in requirements.txt (pinned for Render's pip install).
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+# Without this, future pytest-asyncio releases will warn (and eventually error)
+# about an ambiguous default. Tests are function-scoped, which is the most
+# predictable choice for an in-memory SQLite suite.
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "ignore::DeprecationWarning:passlib.*",
+]

@@ -36,6 +36,14 @@ From **Project Settings → Database**, copy the **Transaction pooler** connecti
 
 ### 1c. Install the auth-to-profile trigger
 
+> **Order matters:** run this **after** the backend has booted at least once.
+> The trigger function references `public.users`; SQLAlchemy creates that
+> table on the backend's first startup via `create_tables()`. If you install
+> the trigger before the first deploy, the trigger function will be created
+> successfully (Postgres validates plpgsql lazily), but the first signup
+> attempt will fail. Do **step 2** (Render) first, wait for the service to
+> be healthy, then come back here.
+
 Open the SQL Editor in Supabase and run [`backend/migrations/001_supabase_profile_trigger.sql`](../backend/migrations/001_supabase_profile_trigger.sql) verbatim.
 
 This installs two triggers on `auth.users`:

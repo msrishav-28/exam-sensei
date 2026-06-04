@@ -1,35 +1,69 @@
-# Render Blueprint for ExamSensei Backend (Supabase Postgres, no Docker)
+# Render Blueprint for ExamSensei backend
 # https://render.com/docs/blueprint-spec
+#
+# Architecture: Supabase Postgres + Supabase Auth + pluggable LLM provider.
+# Render runs the FastAPI app on its native Python runtime — no Docker.
 
 services:
-  # FastAPI backend — Render native Python runtime
   - type: web
     name: examsensei-api
     runtime: python
-    region: singapore           # closest to India
-    plan: free                  # 'starter' ($7/mo) for always-on
+    region: singapore           # closest to India; matches Supabase region
+    plan: free                  # bump to 'starter' ($7/mo) for always-on (no cold start)
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app_v2:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/v1/health
+    autoDeploy: true            # auto-redeploy on push to main
+
     envVars:
+      # ---- runtime ----
       - key: ENVIRONMENT
         value: production
       - key: PYTHON_VERSION
         value: 3.11.7
-      # DATABASE_URL points at Supabase. Set manually in the Render dashboard
-      # to the Supabase connection string (with ?sslmode=require). The
-      # transaction-mode pooler URL (port 6543) is recommended for small apps.
-      - key: DATABASE_URL
-        sync: false
-      - key: SECRET_KEY
-        generateValue: true
-      - key: ALLOWED_ORIGINS
-        sync: false   # Set to your Vercel + custom-domain origins
       - key: LOG_LEVEL
         value: INFO
-      # Optional Ollama URL (leave blank to fall back to canned responses)
-      - key: OLLAMA_URL
+
+      # ---- Supabase Postgres ----
+      # Use the Supabase transaction-mode pooler URL (port 6543), with
+      # ?sslmode=require already appended.
+      - key: DATABASE_URL
         sync: false
+
+      # ---- Supabase Auth (verifier) ----
+      # SUPABASE_JWT_SECRET is REQUIRED — the production guard in config.py
+      # will refuse to boot with the default placeholder value.
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+
+      # Service-role key — only set if the backend will call Supabase
+      # admin REST/RPC. The scraper uses it but runs on GitHub Actions,
+      # not on Render, so leave blank here unless you have a specific need.
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+      # ---- CORS ----
+      # Comma-separated list of frontend origins, e.g.
+      # https://exam-sensei.vercel.app,https://examsensei.com
+      - key: ALLOWED_ORIGINS
+        sync: false
+
+      # ---- LLM provider keys (optional but recommended) ----
+      # Priority order in llm_providers.get_provider():
+      #   ANTHROPIC > OPENAI > GROQ > GEMINI > Null (canned fallback).
+      # Without any key the chat endpoint still returns 200 with canned text.
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+      # ---- Observability (optional) ----
       - key: SENTRY_DSN
         sync: false
