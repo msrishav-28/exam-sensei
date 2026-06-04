@@ -17,6 +17,10 @@ export default defineConfig({
     tanstackStart({
       spa: {
         enabled: true,
+        // Emit the prerendered shell at dist/client/index.html so Vercel's
+        // Vite framework preset serves it as the root document for every
+        // path (with the vercel.json rewrite below for deep links).
+        prerender: { outputPath: "/index" },
       },
       // Disable sitemap.xml output (we don't have a sitemap pipeline).
       sitemap: { enabled: false },
