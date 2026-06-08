@@ -77,38 +77,66 @@ class ExtractedExam(BaseModel):
 # Fetchers
 # ---------------------------------------------------------------------------
 
-async def fetch_via_jina(url: str, *, timeout: float = 30.0) -> str:
+async def fetch_via_jina(url: str, *, timeout: float = 30.0, no_cache: bool = False) -> str:
     """
     Jina Reader returns clean LLM-friendly markdown for any URL.
     Free, no auth required up to ~100 req/min.
+
+    Set `no_cache=True` on retry — Jina occasionally caches a 422 from an
+    aggressive origin (gov.in sites) and serves it back. X-No-Cache forces
+    a re-fetch with a fresh upstream connection, which sometimes succeeds.
     """
     reader_url = f"https://r.jina.ai/{url}"
+    headers = {"User-Agent": "ExamSensei-Bot/1.0"}
+    if no_cache:
+        headers["X-No-Cache"] = "true"
     async with httpx.AsyncClient(timeout=timeout) as client:
-        r = await client.get(reader_url, headers={"User-Agent": "ExamSensei-Bot/1.0"})
+        r = await client.get(reader_url, headers=headers)
         r.raise_for_status()
         return r.text
 
 
-async def fetch_via_crawl4ai(url: str) -> str:
+async def fetch_via_crawl4ai(url: str, *, page_timeout_ms: int = 20_000) -> str:
     """
     Crawl4AI for full JS-rendered pages with built-in anti-bot.
     Lazy import so unit tests don't need the package installed.
+
+    `page_timeout_ms` caps Playwright's navigation wait. Default lowered from
+    Crawl4AI's built-in 60 s — gov.in sites that block headless browsers will
+    timeout regardless, and the long wait wastes ~3 minutes of workflow runtime
+    per failed source. 20 s is enough for any site that's going to succeed.
     """
-    from crawl4ai import AsyncWebCrawler  # type: ignore
+    from crawl4ai import AsyncWebCrawler, CrawlerRunConfig  # type: ignore
+    run_cfg = CrawlerRunConfig(page_timeout=page_timeout_ms)
     async with AsyncWebCrawler(verbose=False) as crawler:
-        result = await crawler.arun(url=url)
+        result = await crawler.arun(url=url, config=run_cfg)
         return result.markdown or ""
 
 
+def _looks_like_real_content(text: str) -> bool:
+    """Cheap heuristic: long enough and not just a Jina error envelope."""
+    if not text or len(text) < 200:
+        return False
+    # Jina returns prose like "We've received your request. The URL was..."
+    # for some 4xx responses — those slip past raise_for_status sometimes.
+    lower = text.lower()
+    if "unprocessable" in lower[:500] or "we couldn't process" in lower[:500]:
+        return False
+    return True
+
+
 async def fetch_page(url: str, *, prefer_jina: bool = True) -> str:
-    """Try Jina first (fast, free), fall back to Crawl4AI for stubborn pages."""
-    try:
-        if prefer_jina:
-            text = await fetch_via_jina(url)
-            if text and len(text) > 200:  # heuristic: too-short usually means error page
-                return text
-    except Exception as e:  # noqa: BLE001
-        log.warning(f"Jina failed for {url}: {e}")
+    """Try Jina (twice if needed), fall back to Crawl4AI for stubborn pages."""
+    if prefer_jina:
+        for no_cache in (False, True):
+            try:
+                text = await fetch_via_jina(url, no_cache=no_cache)
+                if _looks_like_real_content(text):
+                    return text
+            except Exception as e:  # noqa: BLE001
+                log.warning(
+                    f"Jina {'(no-cache retry) ' if no_cache else ''}failed for {url}: {e}"
+                )
     try:
         return await fetch_via_crawl4ai(url)
     except Exception as e:  # noqa: BLE001
@@ -170,13 +198,21 @@ async def extract_exam_data(
         text=scraped_text[:30_000],   # rough cap for token budget
     )
 
+    # NOTE: do NOT pass `response_schema=ExtractedExam`. The google-genai SDK
+    # converts Pydantic models to a JSON schema that includes
+    # `additionalProperties: false`, which the Gemini Developer API (free
+    # tier) rejects with:
+    #     "additionalProperties is only supported in Gemini Enterprise
+    #      Agent Platform mode, not in Gemini Developer API mode."
+    # The schema is already embedded in the prompt text and Pydantic
+    # validates the response on the way back (model_validate below), so
+    # `response_mime_type` alone is enough to keep output JSON-shaped.
     try:
         resp = await client.aio.models.generate_content(
             model=model,
             contents=[{"role": "user", "parts": [{"text": prompt}]}],
             config=gtypes.GenerateContentConfig(
                 response_mime_type="application/json",
-                response_schema=ExtractedExam,
             ),
         )
     except Exception as e:  # noqa: BLE001
